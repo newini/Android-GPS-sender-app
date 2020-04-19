@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">GPS Sender</string>
+    <string name="latitude">Latitude:</string>
+    <string name="time_of_request">Time of request:</string>
+    <string name="longitude">Longitude:</string>
+    <string name="location_method">Location  Method</string>
+</resources>
