@@ -4,4 +4,6 @@
     <string name="time_of_request">Time of request:</string>
     <string name="longitude">Longitude:</string>
     <string name="location_method">Location  Method</string>
+    <string name="send_status">Send Status:</string>
+    <string name="imei">Imei:</string>
 </resources>

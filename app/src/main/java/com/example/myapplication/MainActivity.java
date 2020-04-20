@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Service;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,16 +14,22 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.provider.Settings;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.net.URI;
+import org.json.JSONObject;
+
+import java.io.DataOutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
     final String TAG = "GPS";
@@ -38,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     boolean isGPS = false;
     boolean isNetwork = false;
     boolean canGetLocation = true;
+    String imei = "1234";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +64,21 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
         permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
         permissionsToRequest = findUnAskedPermissions(permissions);
+
+        // Get imei
+        TelephonyManager telephonyManager = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
+        if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.READ_PHONE_STATE}, ALL_PERMISSIONS_RESULT);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            imei = telephonyManager.getImei();
+        } else {
+            imei = telephonyManager.getDeviceId();
+        }
+        TextView my_imei = (TextView) findViewById(R.id.my_imei);
+        my_imei.setText(imei);
 
         if (!isGPS && !isNetwork) {
             Log.d(TAG, "Connection off");
@@ -122,11 +145,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     if (loc_gps != null) {
                         loc_method.setText("GPS");
                         updateUI(loc_gps);
+                        sendPost(loc_gps);
                     } else {
                         Location loc_net = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                         if (loc_net != null) {
                             loc_method.setText("Network");
                             updateUI(loc_net);
+                            sendPost(loc_net);
                         }
                     }
                 }
@@ -260,5 +285,55 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
     }
 
-    // CURL
+    // Send GPS
+    String urlAdress = "http://192.168.0.25:3001/api";
+    public void sendPost(final Location loc) {
+        TextView post_status = (TextView) findViewById((R.id.post_status));
+        Log.d(TAG, "sendPost");
+        //Thread thread = new Thread(new Runnable() {
+            //@Override
+            //public void run() {
+                try {
+                    URL url = new URL(urlAdress);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+                    conn.setRequestProperty("Accept", "application/json");
+                    conn.setRequestProperty("token", "qwe123qwe");
+                    conn.setDoOutput(true);
+                    conn.setDoInput(true);
+
+                    Date date= new Date();
+                    Timestamp ts = new Timestamp(date.getTime());
+
+                    JSONObject jsonParam = new JSONObject();
+                    jsonParam.put("timestamp", ts);
+                    jsonParam.put("imei", imei);
+                    jsonParam.put("lat", loc.getLatitude());
+                    jsonParam.put("lng", loc.getLongitude());
+
+                    Log.i("JSON", jsonParam.toString());
+                    DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+                    //os.writeBytes(URLEncoder.encode(jsonParam.toString(), "UTF-8"));
+                    os.writeBytes(jsonParam.toString());
+
+                    os.flush();
+                    os.close();
+
+                    Log.i("STATUS", String.valueOf(conn.getResponseCode()));
+                    Log.i("MSG" , conn.getResponseMessage());
+
+                    conn.disconnect();
+
+                    post_status.setText("Send Success");
+                } catch (Exception e) {
+                    Log.d("MYAPP", "exception", e);
+                    e.printStackTrace();
+                    post_status.setText("Send Error");
+                }
+            //}
+        //});
+
+        //thread.start();
+    }
 }
