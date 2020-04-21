@@ -1,9 +1,21 @@
 <resources>
     <string name="app_name">GPS Sender</string>
-    <string name="latitude">Latitude:</string>
-    <string name="time_of_request">Time of request:</string>
-    <string name="longitude">Longitude:</string>
-    <string name="location_method">Location  Method</string>
-    <string name="send_status">Send Status:</string>
+
+    <string name="textview_url">URI:</string>
+    <string name="my_uri">http://localhost:5000/api</string>
+
+    <string name="textview_token">Token:</string>
+    <string name="my_token">123456</string>
+
+    <string name="button_get_loc">Get Location</string>
+    <string name="togglebutton_start_track">Start track</string>
+
     <string name="imei">Imei:</string>
+    <string name="location_method">Get Location Method:</string>
+
+    <string name="latitude">Latitude:</string>
+    <string name="longitude">Longitude:</string>
+    <string name="time_of_request">Time of request:</string>
+    <string name="send_status">Send Status:</string>
+
 </resources>

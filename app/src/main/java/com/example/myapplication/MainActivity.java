@@ -19,7 +19,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.View;
+import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import org.json.JSONObject;
 
@@ -30,6 +35,12 @@ import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import static java.lang.Thread.sleep;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
     final String TAG = "GPS";
@@ -47,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     boolean canGetLocation = true;
     String imei = "1234";
 
-    @Override
+    @Override // AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -97,21 +108,25 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
 
             // get location
-            getLocation();
+            //getLocation();
         }
     }
 
+    @Override // LocationListener
     public void onLocationChanged(Location location) {
         Log.d(TAG, "onLocationChanged");
         updateUI(location);
     }
 
+    @Override // LocationListener
     public void onStatusChanged(String s, int i, Bundle bundle) {}
 
+    @Override // LocationListener
     public void onProviderEnabled(String s) {
         getLocation();
     }
 
+    @Override // LocationListener
     public void onProviderDisabled(String s) {
         if (locationManager != null) {
             locationManager.removeUpdates(this);
@@ -205,7 +220,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
     @TargetApi(Build.VERSION_CODES.M)
-    @Override
+    @Override  // AppCompatActivity
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
             case ALL_PERMISSIONS_RESULT:
@@ -285,21 +300,44 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
     }
 
+    public void buttonGetLocation(View view) {
+        Toast.makeText(getApplicationContext(), "Get Location", Toast.LENGTH_LONG).show();
+        getLocation();
+    }
+
+    // Toggle button
+    public void onToggleClicked(View view) {
+        boolean toggle_on = ((ToggleButton) view).isChecked();
+        if (toggle_on) {
+            Log.d(TAG,"toggle on");
+            getLocation();
+        } else {
+            Log.d(TAG,"toggle off");
+            locationManager.removeUpdates(this);
+        }
+    }
+
     // Send GPS
-    String urlAdress = "http://192.168.0.25:3001/api";
     public void sendPost(final Location loc) {
+        // Get URI
+        EditText my_uri = (EditText) findViewById(R.id.my_uri);
+        String urlAddress = my_uri.getText().toString();
+        // Get Token
+        EditText my_token = (EditText) findViewById(R.id.my_token);
+        String token_str = my_token.getText().toString();
+
         TextView post_status = (TextView) findViewById((R.id.post_status));
         Log.d(TAG, "sendPost");
         //Thread thread = new Thread(new Runnable() {
             //@Override
             //public void run() {
                 try {
-                    URL url = new URL(urlAdress);
+                    URL url = new URL(urlAddress);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
                     conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
                     conn.setRequestProperty("Accept", "application/json");
-                    conn.setRequestProperty("token", "qwe123qwe");
+                    conn.setRequestProperty("token", token_str);
                     conn.setDoOutput(true);
                     conn.setDoInput(true);
 
@@ -307,7 +345,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     Timestamp ts = new Timestamp(date.getTime());
 
                     JSONObject jsonParam = new JSONObject();
-                    jsonParam.put("timestamp", ts);
+                    jsonParam.put("time", ts);
                     jsonParam.put("imei", imei);
                     jsonParam.put("lat", loc.getLatitude());
                     jsonParam.put("lng", loc.getLongitude());
